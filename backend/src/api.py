@@ -25,6 +25,8 @@ CORS(app)
 # db_drop_and_create_all()
 
 # ROUTES
+
+
 @app.route('/drinks')
 def get_drinks():
     """
@@ -64,7 +66,9 @@ def add_drink(token):
     """
     try:
         data = request.get_json()
-        drink = Drink(title=data.get('title'), recipe=json.dumps(data.get('recipe')))
+        drink = Drink(
+            title=data.get('title'),
+            recipe=json.dumps(data.get('recipe')))
         drink.insert()
         return jsonify({
             'success': True,

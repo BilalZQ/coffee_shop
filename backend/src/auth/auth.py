@@ -50,10 +50,10 @@ def get_token_auth_header():
         auth_error('Header expected to have Bearer before token', UNAUTHORIZED)
     elif len(headers_arr) != 2:
         auth_error(
-            'Authorization is expected to be in following format: "Bearer <Token>"',
+            'Invalid authorization format, expected "Bearer <Token>"',
             UNAUTHORIZED)
 
-    return headers_arr[1] # Token
+    return headers_arr[1]  # Token
 
 
 def check_permissions(permission, payload):
@@ -112,7 +112,8 @@ def verify_decode_jwt(token):
 
         except jwt.JWTClaimsError:
             auth_error(
-                'Incorrect claims. Please, check the audience and issuer.', UNAUTHORIZED)
+                'Incorrect claims. Please, check the audience and issuer.',
+                UNAUTHORIZED)
         except Exception:
             auth_error('Unable to parse authentication token.', BAD_REQUEST)
 
