@@ -1,7 +1,10 @@
 """Constants module for coffee app."""
 
 
-AUTH0_DOMAIN = 'fsnd-bilal.eu.auth0.com/'
+from werkzeug.exceptions import Forbidden
+
+
+AUTH0_DOMAIN = 'fsnd-bilal.eu.auth0.com'
 ALGORITHMS = ['RS256']
 API_AUDIENCE = 'coffee-shop'
 
@@ -14,6 +17,7 @@ INTERNAL_SERVER_ERROR = 500
 METHOD_NOT_ALLOWED = 405
 OK = 200
 UNAUTHORIZED = 401
+FORBIDDEN = 403
 
 
 ERROR_MESSAGES = {
@@ -22,5 +26,6 @@ ERROR_MESSAGES = {
     UNPROCESSABLE_ENTITY: 'Unprocessable Entity',
     INTERNAL_SERVER_ERROR: 'Internal Server Error',
     METHOD_NOT_ALLOWED: 'Method Not Allowed',
-    UNAUTHORIZED: 'UNAUTHORIZED'
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    FORBIDDEN: 'Forbidden request'
 }

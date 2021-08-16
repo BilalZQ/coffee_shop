@@ -32,13 +32,10 @@ def get_drinks():
 
     :return:
     """
-    try:
-        return jsonify({
-            'success': True,
-            'drinks': [drink.short() for drink in Drink.query.all()]
-        })
-    except Exception as exc:
-        abort(exc.code)
+    return jsonify({
+        'success': True,
+        'drinks': [drink.short() for drink in Drink.query.all()]
+    })
 
 
 @app.route('/drinks-detail')
@@ -50,13 +47,10 @@ def get_drinks_detail(token):
     :param token:
     :return:
     """
-    try:
-        return jsonify({
-            'success': True,
-            'drinks': [drink.long() for drink in Drink.query.all()]
-        })
-    except Exception as exc:
-        abort(exc.code)
+    return jsonify({
+        'success': True,
+        'drinks': [drink.long() for drink in Drink.query.all()]
+    })
 
 
 @app.route('/drinks', methods=['POST'])
@@ -70,14 +64,14 @@ def add_drink(token):
     """
     try:
         data = request.get_json()
-        drink = Drink(title=data.get('title'), recipe=data.get('recipe'))
+        drink = Drink(title=data.get('title'), recipe=json.dumps(data.get('recipe')))
         drink.insert()
         return jsonify({
             'success': True,
             'drink': drink.long()
         })
-    except Exception as exc:
-        abort(exc.code)
+    except Exception:
+        abort(BAD_REQUEST)
 
 
 @app.route('/drinks/<drink_id>', methods=['PATCH'])
@@ -97,15 +91,15 @@ def update_drink(token, drink_id):
 
         data = request.get_json()
         drink.title = data.get('title')
-        drink.recipe = data.get('recipe')
+        drink.recipe = json.dumps(data.get('recipe'))
         drink.update()
 
         return jsonify({
             'success': True,
-            'drinks': drink.long()
+            'drinks': [drink.long()]
         })
-    except Exception as exc:
-        abort(exc.code)
+    except Exception:
+        abort(BAD_REQUEST)
 
 
 @app.route('/drinks/<drink_id>', methods=['DELETE'])
@@ -129,8 +123,8 @@ def delete_drink(token, drink_id):
             'success': True,
             'delete': drink_id
         })
-    except Exception as exp:
-        abort(exp.code)
+    except Exception:
+        abort(BAD_REQUEST)
 
 
 # Error Handling

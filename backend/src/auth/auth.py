@@ -6,9 +6,9 @@ from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
 
-from constants import (
+from ..constants import (
     AUTH0_DOMAIN, ALGORITHMS, API_AUDIENCE,
-    ERROR_MESSAGES, UNAUTHORIZED, BAD_REQUEST
+    ERROR_MESSAGES, UNAUTHORIZED, BAD_REQUEST, FORBIDDEN
 )
 
 
@@ -46,8 +46,8 @@ def get_token_auth_header():
 
     headers_arr = header.split(' ')
 
-    if header[0].lower() != 'bearer':
-        auth_error('Header expected to have "Bearer before token"', UNAUTHORIZED)
+    if headers_arr[0].lower() != 'bearer':
+        auth_error('Header expected to have Bearer before token', UNAUTHORIZED)
     elif len(headers_arr) != 2:
         auth_error(
             'Authorization is expected to be in following format: "Bearer <Token>"',
@@ -65,10 +65,10 @@ def check_permissions(permission, payload):
     :return:
     """
 
-    if 'permission' in payload and permission in payload['permission']:
+    if 'permissions' in payload and permission in payload['permissions']:
         return True
 
-    auth_error(UNAUTHORIZED, ERROR_MESSAGES[UNAUTHORIZED])
+    auth_error(ERROR_MESSAGES[FORBIDDEN], FORBIDDEN)
 
 
 def verify_decode_jwt(token):
