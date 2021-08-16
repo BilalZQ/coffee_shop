@@ -1,86 +1,152 @@
+"""Module for auth."""
+
 import json
 from flask import request, _request_ctx_stack
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
 
+from constants import (
+    AUTH0_DOMAIN, ALGORITHMS, API_AUDIENCE,
+    ERROR_MESSAGES, UNAUTHORIZED, BAD_REQUEST
+)
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
 
-## AuthError Exception
-'''
-AuthError Exception
-A standardized way to communicate auth failure modes
-'''
 class AuthError(Exception):
+    """A standardized way to comminucate auth failure modes."""
+
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
 
 
-## Auth Header
+def auth_error(msg, err):
+    """
+    Auth error.
 
-'''
-@TODO implement get_token_auth_header() method
-    it should attempt to get the header from the request
-        it should raise an AuthError if no header is present
-    it should attempt to split bearer and the token
-        it should raise an AuthError if the header is malformed
-    return the token part of the header
-'''
+    :param msg:
+    :return:
+    """
+    raise AuthError({
+        'success': False,
+        'message': msg,
+        'error': err
+    }, err)
+
+
 def get_token_auth_header():
-   raise Exception('Not Implemented')
+    """
+    Get token from authorization header.
 
-'''
-@TODO implement check_permissions(permission, payload) method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
-        payload: decoded jwt payload
+    :return:
+    """
+    header = request.headers.get('Authorization')
+    if not header:
+        auth_error('Authorization header is required', UNAUTHORIZED)
 
-    it should raise an AuthError if permissions are not included in the payload
-        !!NOTE check your RBAC settings in Auth0
-    it should raise an AuthError if the requested permission string is not in the payload permissions array
-    return true otherwise
-'''
+    headers_arr = header.split(' ')
+
+    if header[0].lower() != 'bearer':
+        auth_error('Header expected to have "Bearer before token"', UNAUTHORIZED)
+    elif len(headers_arr) != 2:
+        auth_error(
+            'Authorization is expected to be in following format: "Bearer <Token>"',
+            UNAUTHORIZED)
+
+    return headers_arr[1] # Token
+
+
 def check_permissions(permission, payload):
-    raise Exception('Not Implemented')
+    """
+    Check permissions.
 
-'''
-@TODO implement verify_decode_jwt(token) method
-    @INPUTS
-        token: a json web token (string)
+    :param permission:
+    :param payload:
+    :return:
+    """
 
-    it should be an Auth0 token with key id (kid)
-    it should verify the token using Auth0 /.well-known/jwks.json
-    it should decode the payload from the token
-    it should validate the claims
-    return the decoded payload
+    if 'permission' in payload and permission in payload['permission']:
+        return True
 
-    !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
-'''
+    auth_error(UNAUTHORIZED, ERROR_MESSAGES[UNAUTHORIZED])
+
+
 def verify_decode_jwt(token):
-    raise Exception('Not Implemented')
+    """
+    Verify jwt integrity is reserved.
 
-'''
-@TODO implement @requires_auth(permission) decorator method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
+    :param token:
+    :return:
+    """
+    jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+    jwks = json.loads(jsonurl.read())
+    rsa_key = {}
 
-    it should use the get_token_auth_header method to get the token
-    it should use the verify_decode_jwt method to decode the jwt
-    it should use the check_permissions method validate claims and check the requested permission
-    return the decorator which passes the decoded payload to the decorated method
-'''
+    unverified_header = jwt.get_unverified_header(token)
+    if 'kid' not in unverified_header:
+        auth_error('Authorization malformed.', UNAUTHORIZED)
+
+    for key in jwks['keys']:
+        if key['kid'] == unverified_header['kid']:
+            rsa_key = {
+                'kty': key['kty'],
+                'kid': key['kid'],
+                'use': key['use'],
+                'n': key['n'],
+                'e': key['e']
+            }
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=API_AUDIENCE,
+                issuer='https://' + AUTH0_DOMAIN + '/'
+            )
+
+            return payload
+
+        except jwt.ExpiredSignatureError:
+            auth_error('Token expired.', UNAUTHORIZED)
+
+        except jwt.JWTClaimsError:
+            auth_error(
+                'Incorrect claims. Please, check the audience and issuer.', UNAUTHORIZED)
+        except Exception:
+            auth_error('Unable to parse authentication token.', BAD_REQUEST)
+
+    auth_error('Unable to find the appropriate key..', BAD_REQUEST)
+
+
 def requires_auth(permission=''):
+    """
+    Require auth.
+
+    :param permission:
+    :return:
+    """
     def requires_auth_decorator(f):
+        """
+        Require auth decorator.
+
+        :param f:
+        :return:
+        """
         @wraps(f)
         def wrapper(*args, **kwargs):
+            """
+            Wrapper method.
+
+            :param args:
+            :param kwargs:
+            :return:
+            """
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
 
         return wrapper
+
     return requires_auth_decorator
